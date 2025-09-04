@@ -2312,11 +2312,6 @@ app.post('/api/2fa/temporary-enable', authenticateToken, checkActiveUser, async 
   }
 });
 
-// Catch-all handler: send back React's index.html file for any non-API routes
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
-});
-
 // Export the app for Vercel serverless functions
 export default app;
 
