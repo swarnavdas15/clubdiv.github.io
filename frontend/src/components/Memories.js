@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 export default function Memories() {
   const [memories, setMemories] = useState([]);
@@ -27,9 +27,9 @@ export default function Memories() {
     fetchMemories();
   }, []);
 
-  const nextSlide = () => {
+  const nextSlide = useCallback(() => {
     setCurrentSlide((prev) => (prev + 1) % memories.length);
-  };
+  }, [memories.length]);
 
   const prevSlide = () => {
     setCurrentSlide((prev) => (prev - 1 + memories.length) % memories.length);
@@ -48,7 +48,7 @@ export default function Memories() {
       const timer = setInterval(nextSlide, 5000);
       return () => clearInterval(timer);
     }
-  }, [memories.length, currentSlide, isAutoPlaying]);
+  }, [memories.length, isAutoPlaying, nextSlide]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);

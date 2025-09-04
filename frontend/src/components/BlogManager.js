@@ -10,13 +10,13 @@ export default function BlogManager() {
     content: ''
   });
   const [editingId, setEditingId] = useState(null);
-  const { token, user } = useAuth();
+  const { token } = useAuth();
 
   useEffect(() => {
     fetchBlogPosts();
-  }, []);
+  }, [fetchBlogPosts]);
 
-  const fetchBlogPosts = async () => {
+  const fetchBlogPosts = React.useCallback(async () => {
     try {
       // Use user blog posts endpoint for both admin and regular users
       // This returns all blog posts by the authenticated user with all statuses
@@ -36,7 +36,7 @@ export default function BlogManager() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
