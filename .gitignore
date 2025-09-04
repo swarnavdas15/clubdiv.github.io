@@ -11,11 +11,7 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
-# Build outputs
-build/
-dist/
-.next/
-out/
+
 
 # Logs
 logs
@@ -37,10 +33,6 @@ coverage/
 
 # nyc test coverage
 .nyc_output
-
-# Dependency directories
-node_modules/
-jspm_packages/
 
 # Optional npm cache directory
 .npm
@@ -74,9 +66,6 @@ jspm_packages/
 .nuxt
 dist
 
-# Gatsby files
-.cache/
-public
 
 # Storybook build outputs
 .out
@@ -107,9 +96,7 @@ Desktop.ini
 *.sqlite3
 *.db
 
-# Upload directories (if any)
-uploads/
-public/uploads/
+
 
 # Vercel
 .vercel
