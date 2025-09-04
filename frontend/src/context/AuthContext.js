@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const AuthContext = createContext();
 
@@ -14,6 +14,33 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
+
+  const verifyToken = useCallback(async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+        if (userData.isActive === false) {
+          window.location.href = '/pending-approval';
+        }
+      } else {
+        localStorage.removeItem('token');
+        setToken(null);
+      }
+    } catch (error) {
+      console.error('Token verification error:', error);
+      localStorage.removeItem('token');
+      setToken(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
 
   useEffect(() => {
     // Check for OAuth token in URL parameters
@@ -54,34 +81,7 @@ export const AuthProvider = ({ children }) => {
     } else {
       setLoading(false);
     }
-  }, [token]);
-
-  const verifyToken = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/api/profile', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-        if (userData.isActive === false) {
-          window.location.href = '/pending-approval';
-        }
-      } else {
-        localStorage.removeItem('token');
-        setToken(null);
-      }
-    } catch (error) {
-      console.error('Token verification error:', error);
-      localStorage.removeItem('token');
-      setToken(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [token, verifyToken]);
 
   const login = async (email, password) => {
     try {

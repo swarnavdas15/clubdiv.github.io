@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Loading from './Loading';
 
@@ -10,7 +10,7 @@ export default function ProjectDetail() {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const fetchProjectDetail = async () => {
+  const fetchProjectDetail = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`http://localhost:5000/api/projects/${id}?t=${Date.now()}`);
@@ -25,13 +25,13 @@ export default function ProjectDetail() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     if (id) {
       fetchProjectDetail();
     }
-  }, [id, refreshKey]);
+  }, [id, refreshKey, fetchProjectDetail]);
 
   // Add automatic polling to refresh project details every 30 seconds
   useEffect(() => {
@@ -39,7 +39,7 @@ export default function ProjectDetail() {
       const interval = setInterval(fetchProjectDetail, 30000);
       return () => clearInterval(interval);
     }
-  }, [id]);
+  }, [id, fetchProjectDetail]);
 
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
