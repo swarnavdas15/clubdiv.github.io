@@ -11,6 +11,10 @@
       "config": {
         "distDir": "build"
       }
+    },
+      {
+      "src": "frontend/package.json",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
