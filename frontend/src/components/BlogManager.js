@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 export default function BlogManager() {
@@ -12,11 +12,7 @@ export default function BlogManager() {
   const [editingId, setEditingId] = useState(null);
   const { token } = useAuth();
 
-  useEffect(() => {
-    fetchBlogPosts();
-  }, [fetchBlogPosts]);
-
-  const fetchBlogPosts = React.useCallback(async () => {
+  const fetchBlogPosts = useCallback(async () => {
     try {
       // Use user blog posts endpoint for both admin and regular users
       // This returns all blog posts by the authenticated user with all statuses
@@ -37,6 +33,10 @@ export default function BlogManager() {
       setLoading(false);
     }
   }, [token]);
+
+  useEffect(() => {
+    fetchBlogPosts();
+  }, [fetchBlogPosts]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

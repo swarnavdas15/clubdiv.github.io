@@ -31,17 +31,17 @@ export default function Memories() {
     setCurrentSlide((prev) => (prev + 1) % memories.length);
   }, [memories.length]);
 
-  const prevSlide = () => {
+  const prevSlide = useCallback(() => {
     setCurrentSlide((prev) => (prev - 1 + memories.length) % memories.length);
-  };
+  }, [memories.length]);
 
-  const goToSlide = (index) => {
+  const goToSlide = useCallback((index) => {
     setCurrentSlide(index);
-  };
+  }, []);
 
-  const toggleAutoPlay = () => {
+  const toggleAutoPlay = useCallback(() => {
     setIsAutoPlaying(!isAutoPlaying);
-  };
+  }, [isAutoPlaying]);
 
   useEffect(() => {
     if (memories.length > 0 && isAutoPlaying) {
