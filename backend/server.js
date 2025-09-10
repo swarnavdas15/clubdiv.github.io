@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+ import dotenv from 'dotenv';
 
 // Load environment variables FIRST - CRITICAL for OAuth configuration
 dotenv.config();
@@ -54,33 +54,14 @@ mongoose.connect(process.env.MONGODB_URI)
 .then(() => console.log('MongoDB Atlas connected successfully'))
 .catch(err => console.error('MongoDB connection error:', err));
 
-// Multer configuration for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, 'uploads'));
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+import { upload } from './utils/fileUpload.js';
 
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'), false);
-    }
-  }
-});
+// Multer configuration for file uploads
+// Removed local disk storage and replaced with Cloudinary storage via upload middleware
 
 // Serve uploaded files statically
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Removed static serving of local uploads folder since files are now on Cloudinary
+// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Serve frontend build files statically
 app.use(express.static(path.join(__dirname, '../frontend/build')));
@@ -786,7 +767,7 @@ app.get('/api/admin/about', authenticateToken, checkAdmin, async (req, res) => {
 app.post('/api/admin/about', authenticateToken, checkAdmin, upload.single('image'), async (req, res) => {
   try {
     const { title, content, imageUrl } = req.body;
-    const image = req.file ? `/uploads/${req.file.filename}` : imageUrl;
+    const image = req.file ? req.file.path : imageUrl;
 
     const newAboutEntry = new About({
       title,
@@ -807,7 +788,7 @@ app.put('/api/admin/about/:id', authenticateToken, checkAdmin, upload.single('im
   try {
     const { id } = req.params;
     const { title, content, imageUrl } = req.body;
-    const image = req.file ? `/uploads/${req.file.filename}` : imageUrl;
+    const image = req.file ? req.file.path : imageUrl;
 
     const updatedAboutEntry = await About.findByIdAndUpdate(id, {
       title,
@@ -919,7 +900,7 @@ app.get('/api/admin/projects', authenticateToken, checkAdmin, async (req, res) =
 app.post('/api/admin/projects', authenticateToken, checkAdmin, upload.single('image'), async (req, res) => {
   try {
     const { title, description, technologies, githubLink, liveDemo, image: imageUrl, author } = req.body;
-    const image = req.file ? `/uploads/${req.file.filename}` : imageUrl;
+    const image = req.file ? req.file.path : imageUrl;
 
     // Parse technologies if it's a string
     let parsedTechnologies = [];
@@ -1068,7 +1049,7 @@ app.get('/api/admin/team', authenticateToken, checkAdmin, async (req, res) => {
 app.post('/api/admin/team', authenticateToken, checkAdmin, upload.single('image'), async (req, res) => {
   try {
     const { name, role, email, linkedinUrl, githubUrl, bio, image: imageUrl } = req.body;
-    const image = req.file ? `/uploads/${req.file.filename}` : imageUrl;
+    const image = req.file ? req.file.path : imageUrl;
 
     const newTeamMember = new Team({
       name,
@@ -1093,7 +1074,7 @@ app.put('/api/admin/team/:id', authenticateToken, checkAdmin, upload.single('ima
   try {
     const { id } = req.params;
     const { name, role, email, linkedinUrl, githubUrl, bio, image: imageUrl } = req.body;
-    const image = req.file ? `/uploads/${req.file.filename}` : imageUrl;
+    const image = req.file ? req.file.path : imageUrl;
 
     const updatedTeamMember = await Team.findByIdAndUpdate(id, {
       name,
@@ -1173,7 +1154,7 @@ app.get('/api/user/blog-posts', authenticateToken, async (req, res) => {
 app.post('/api/blog-posts', authenticateToken, checkActiveUser, upload.single('image'), async (req, res) => {
   try {
     const { title, content } = req.body;
-    const image = req.file ? `/uploads/${req.file.filename}` : null;
+    const image = req.file ? req.file.path : null;
 
     const newBlogPost = new Blog({
       title,
@@ -1426,7 +1407,7 @@ app.get('/api/admin/memories', authenticateToken, checkAdmin, async (req, res) =
 app.post('/api/admin/memories', authenticateToken, checkAdmin, upload.single('image'), async (req, res) => {
   try {
     const { title, imageUrl, eventDate, author } = req.body;
-    const image = req.file ? `/uploads/${req.file.filename}` : imageUrl;
+    const image = req.file ? req.file.path : imageUrl;
 
     const newMemory = new Memory({
       title,
@@ -1449,7 +1430,7 @@ app.put('/api/admin/memories/:id', authenticateToken, checkAdmin, upload.single(
   try {
     const { id } = req.params;
     const { title, imageUrl, eventDate, author } = req.body;
-    const image = req.file ? `/uploads/${req.file.filename}` : imageUrl;
+    const image = req.file ? req.file.path : imageUrl;
 
     const updatedMemory = await Memory.findByIdAndUpdate(id, {
       title,
@@ -1760,7 +1741,7 @@ app.get('/api/memories', async (req, res) => {
 app.post('/api/memories', authenticateToken, checkActiveUser, upload.single('image'), async (req, res) => {
   try {
     const { title, description } = req.body;
-    const image = req.file ? `/uploads/${req.file.filename}` : null;
+    const image = req.file ? req.file.path : null;
 
     const newMemory = new Memory({
       title,

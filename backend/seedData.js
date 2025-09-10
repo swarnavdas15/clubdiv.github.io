@@ -20,70 +20,9 @@ const sampleAbout = {
 
 const sampleEvents = [];
 
-const sampleProjects = [
-  {
-    title: "E-Commerce Platform",
-    description: "A full-stack e-commerce solution built with modern technologies",
-    technologies: ["React", "Node.js", "MongoDB", "Express"],
-    githubUrl: "https://github.com/divclub/ecommerce-platform",
-    liveUrl: "https://ecommerce.divclub.com",
-    imageUrl: "/images/ecommerce-project.jpg",
-    status: "active"
-  },
-  {
-    title: "Task Management App",
-    description: "A collaborative task management application for teams",
-    technologies: ["Vue.js", "Firebase", "Tailwind CSS"],
-    githubUrl: "https://github.com/divclub/task-manager",
-    liveUrl: "https://tasks.divclub.com",
-    imageUrl: "/images/task-manager.jpg",
-    status: "active"
-  },
-  {
-    title: "Weather Dashboard",
-    description: "Real-time weather information dashboard with interactive maps",
-    technologies: ["React", "OpenWeather API", "Chart.js"],
-    githubUrl: "https://github.com/divclub/weather-dashboard",
-    liveUrl: "https://weather.divclub.com",
-    imageUrl: "/images/weather-dashboard.jpg",
-    status: "active"
-  }
-];
+const sampleProjects = [];
 
-const sampleTeam = [
-  {
-    name: "John Doe",
-    role: "Lead Developer",
-    bio: "Full-stack developer with 5+ years of experience in web technologies",
-    image: "/images/john-doe.jpg",
-    linkedinUrl: "https://linkedin.com/in/johndoe",
-    githubUrl: "https://github.com/johndoe"
-  },
-  {
-    name: "Jane Smith",
-    role: "UI/UX Designer",
-    bio: "Creative designer passionate about user experience and modern design trends",
-    image: "/images/jane-smith.jpg",
-    linkedinUrl: "https://linkedin.com/in/janesmith",
-    githubUrl: "https://github.com/janesmith"
-  },
-  {
-    name: "Mike Johnson",
-    role: "Backend Engineer",
-    bio: "Backend specialist with expertise in database design and API development",
-    image: "/images/mike-johnson.jpg",
-    linkedinUrl: "https://linkedin.com/in/mikejohnson",
-    githubUrl: "https://github.com/mikejohnson"
-  },
-  {
-    name: "Sarah Wilson",
-    role: "Frontend Developer",
-    bio: "Frontend developer focused on creating responsive and accessible web applications",
-    image: "/images/sarah-wilson.jpg",
-    linkedinUrl: "https://linkedin.com/in/sarahwilson",
-    githubUrl: "https://github.com/sarahwilson"
-  }
-];
+const sampleTeam = [];
 
 // Connect to MongoDB
 async function connectDB() {
