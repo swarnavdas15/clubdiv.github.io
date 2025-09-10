@@ -1,74 +1,80 @@
-# Vercel Deployment Preparation Checklist
+# Cloudinary API Implementation Plan
 
-## ✅ Completed Tasks
-- [x] Created comprehensive DEPLOYMENT.md guide
-- [x] Verified backend/server.js is properly configured for Vercel (exports app, uses process.env.PORT)
-- [x] Verified frontend/package.json has correct build script
-- [x] Verified vercel.json configuration is correct
-- [x] Created .env template with all required environment variables
-- [x] Updated OAuth callback URLs to use environment variables (Google & GitHub)
-- [x] Updated frontend API calls to use relative URLs for production
+## Overview
+The project already has basic Cloudinary integration for image uploads. This plan outlines enhancements to add comprehensive Cloudinary API features including image management, deletion, and optimization.
 
-## 🔄 In Progress Tasks
-- [ ] Configure production MongoDB connection (MongoDB Atlas recommended)
-- [ ] Set up production file storage (AWS S3 or similar for uploaded files)
+## Current Status
+- ✅ Cloudinary configuration in `backend/config/cloudinary.js`
+- ✅ Multer storage setup in `backend/utils/fileUpload.js`
+- ✅ Basic upload middleware integrated in routes
+- ✅ Dependencies installed (cloudinary, multer-storage-cloudinary)
+- ✅ Cloudinary management API endpoints implemented:
+  - `/api/admin/cloudinary/images` - List all uploaded images
+  - `/api/admin/cloudinary/delete/:publicId` - Delete specific image
+  - `/api/admin/cloudinary/bulk-delete` - Bulk delete images
+  - `/api/cloudinary/upload` - General upload endpoint
+  - `/api/admin/cloudinary/info/:publicId` - Get image info
+  - `/api/admin/cloudinary/cleanup` - Cleanup orphaned images
 
-## 📋 Remaining Tasks
+## Implementation Steps
 
-### Environment Configuration
-- [ ] Set up MongoDB Atlas database and get connection string
-- [ ] Configure Google OAuth credentials in Google Cloud Console
-- [ ] Configure GitHub OAuth app and get client credentials
-- [ ] Configure LinkedIn OAuth app and get client credentials
-- [ ] Set up email service credentials (if using email features)
-- [ ] Generate secure JWT_SECRET and SESSION_SECRET
+### 1. Create Cloudinary Utility Functions
+- [x] Create `backend/utils/cloudinaryUtils.js` with functions for:
+  - Image deletion from Cloudinary
+  - Image transformation/optimization
+  - Bulk image operations
+  - Image metadata retrieval
 
-### Code Updates
-- [ ] Update OAuth callback URLs in passport.js to use environment variables
-- [ ] Replace hardcoded localhost URLs in frontend with relative paths
-- [ ] Configure CORS properly for production domain
-- [ ] Update file upload handling for production (consider external storage)
+### 2. Add Cloudinary Management API Endpoints
+- [x] Add `/api/admin/cloudinary/images` - List all uploaded images
+- [x] Add `/api/admin/cloudinary/delete/:publicId` - Delete specific image
+- [x] Add `/api/admin/cloudinary/bulk-delete` - Bulk delete images
+- [x] Add `/api/cloudinary/upload` - General upload endpoint
+- [x] Add `/api/admin/cloudinary/info/:publicId` - Get image info
+- [x] Add `/api/admin/cloudinary/cleanup` - Cleanup orphaned images
 
-### Deployment Steps
-- [ ] Push code to Git repository (GitHub/GitLab)
-- [ ] Connect repository to Vercel
-- [ ] Configure environment variables in Vercel dashboard
-- [ ] Deploy the application
-- [ ] Test all functionality in production
-- [ ] Update OAuth app callback URLs with production domain
+### 3. Update Existing Routes
+- [x] Ensure all image upload routes use Cloudinary middleware
+- [ ] Add image deletion when records are deleted from database
+  - [ ] Update `/api/admin/about/:id` delete route to clean up images
+  - [ ] Update `/api/admin/projects/:id` delete route to clean up images
+  - [ ] Update `/api/admin/team/:id` delete route to clean up images
+  - [ ] Update `/api/admin/memories/:id` delete route to clean up images
+  - [ ] Update `/api/admin/blog-posts/:id` delete route to clean up images
+  - [ ] Update `/api/admin/users/:id` delete route to clean up user images
+  - [ ] Update `/api/user/delete-account` delete route to clean up user images
+- [x] Update image URLs in database to use Cloudinary URLs
+- [ ] Fix inconsistent image field naming across models
+- [ ] Add imageUrl field to About model or update route logic
 
-### Production Optimizations
-- [ ] Set up proper error logging and monitoring
-- [ ] Configure rate limiting for API endpoints
-- [ ] Set up backup strategy for database
-- [ ] Configure SSL/TLS certificates (handled by Vercel)
-- [ ] Set up CDN for static assets (handled by Vercel)
+### 4. Add Image Optimization Features
+- [ ] Implement automatic image resizing
+- [ ] Add format conversion (WebP, AVIF)
+- [ ] Add lazy loading support
+- [ ] Implement responsive images
 
-## 🚨 Critical Issues to Address
+### 5. Error Handling and Validation
+- [ ] Add proper error handling for Cloudinary API calls
+- [ ] Validate image types and sizes
+- [ ] Add rate limiting for upload endpoints
 
-### OAuth Callback URLs
-Currently hardcoded in backend/config/passport.js:
-- Google: `http://localhost:5000/api/auth/google/callback`
-- GitHub: `http://localhost:5000/api/auth/github/callback`
-- LinkedIn: `http://localhost:5000/api/auth/linkedin/callback`
+### 6. Documentation and Testing
+- [ ] Update API documentation
+- [ ] Add environment variable documentation
+- [ ] Test all Cloudinary features
+- [ ] Add integration tests
 
-Need to make these configurable via environment variables.
+## Files to be Created/Modified
+- `backend/utils/cloudinaryUtils.js` (new)
+- `backend/server.js` (modify - add new routes)
+- `backend/utils/fileUpload.js` (modify - enhance upload options)
+- `backend/models/` (modify - ensure image URL fields are consistent)
 
-### Frontend API Calls
-Frontend likely has hardcoded localhost URLs for API calls that need to be updated for production.
+## Environment Variables Required
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
 
-### File Storage
-Uploaded files are stored locally in `backend/uploads/` which won't persist on Vercel serverless functions. Need external storage solution.
-
-## 🔧 Quick Fixes Needed
-
-1. **Update OAuth Callbacks**: Make callback URLs configurable
-2. **Frontend API URLs**: Use relative paths or environment variables
-3. **File Storage**: Implement cloud storage for uploads
-4. **Environment Variables**: Ensure all required vars are set in Vercel
-
-## 📝 Notes
-- Vercel automatically handles SSL certificates
-- Serverless functions have execution time limits (15 seconds for free tier)
-- File system is ephemeral - don't rely on local file storage
-- Environment variables must be set in Vercel dashboard, not in .env file
+## Dependencies (Already Installed)
+- `cloudinary: ^1.41.3`
+- `multer-storage-cloudinary: ^4.0.0`

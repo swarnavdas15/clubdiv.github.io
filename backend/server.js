@@ -1,4 +1,4 @@
- import dotenv from 'dotenv';
+import dotenv from 'dotenv';
 
 // Load environment variables FIRST - CRITICAL for OAuth configuration
 dotenv.config();
@@ -14,6 +14,7 @@ import { fileURLToPath } from 'url';
 import jwt from 'jsonwebtoken';
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
+import morgan from 'morgan';
 import About from './models/About.js';
 import User from './models/User.js';
 import bcrypt from 'bcrypt';
@@ -27,6 +28,8 @@ import Memory from './models/Memory.js';
 import PasswordChangeRequest from './models/PasswordChangeRequest.js';
 
 import { authenticateToken, generateToken, checkAdmin, checkActiveUser } from './middleware/auth.js';
+import { validate, sanitizeInput, loginSchema, registerSchema, forgotPasswordSchema, twoFactorSchema, twoFactorVerifyLoginSchema } from './middleware/validation.js';
+import { productionSecurity, developmentSecurity, logger, morganStream } from './config/security.js';
 
 // Import passport configuration AFTER dotenv and other imports
 import './config/passport.js';
@@ -55,6 +58,16 @@ mongoose.connect(process.env.MONGODB_URI)
 .catch(err => console.error('MongoDB connection error:', err));
 
 import { upload } from './utils/fileUpload.js';
+import {
+  deleteImage,
+  deleteImages,
+  deleteImageByUrl,
+  listImages,
+  getImageInfo,
+  getOptimizedImageUrl,
+  getResponsiveImageUrls,
+  cleanupOrphanedImages
+} from './utils/cloudinaryUtils.js';
 
 // Multer configuration for file uploads
 // Removed local disk storage and replaced with Cloudinary storage via upload middleware
@@ -811,12 +824,23 @@ app.put('/api/admin/about/:id', authenticateToken, checkAdmin, upload.single('im
 app.delete('/api/admin/about/:id', authenticateToken, checkAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const aboutEntry = await About.findByIdAndDelete(id);
+    const aboutEntry = await About.findById(id);
 
     if (!aboutEntry) {
       return res.status(404).json({ message: 'About entry not found' });
     }
 
+    // Delete associated image from Cloudinary if exists
+    if (aboutEntry.imageUrl) {
+      try {
+        await deleteImageByUrl(aboutEntry.imageUrl);
+      } catch (imageError) {
+        console.error('Error deleting about entry image from Cloudinary:', imageError);
+        // Continue with deletion even if image deletion fails
+      }
+    }
+
+    await About.findByIdAndDelete(id);
     res.json({ message: 'About entry deleted successfully' });
   } catch (error) {
     console.error('Error deleting about entry:', error);
@@ -968,11 +992,30 @@ app.put('/api/admin/projects/:id', authenticateToken, checkAdmin, async (req, re
 app.delete('/api/admin/projects/:id', authenticateToken, checkAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const project = await Project.findByIdAndDelete(id);
+    const project = await Project.findById(id);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
+
+    // Delete associated image from Cloudinary if exists
+    if (project.imageUrl) {
+      try {
+        // Extract publicId from imageUrl
+        // Assuming imageUrl is like https://res.cloudinary.com/<cloud_name>/image/upload/v<version>/<publicId>.<ext>
+        const urlParts = project.imageUrl.split('/');
+        const lastPart = urlParts[urlParts.length - 1];
+        const publicIdWithExt = lastPart.split('.')[0]; // remove extension
+        const publicId = urlParts.slice(urlParts.indexOf('upload') + 1, urlParts.length).join('/').split('.')[0];
+
+        await deleteImage(publicId);
+      } catch (imageError) {
+        console.error('Error deleting project image from Cloudinary:', imageError);
+        // Continue with deletion even if image deletion fails
+      }
+    }
+
+    await Project.findByIdAndDelete(id);
 
     res.json({ message: 'Project deleted successfully' });
   } catch (error) {
@@ -2289,6 +2332,141 @@ app.post('/api/2fa/temporary-enable', authenticateToken, checkActiveUser, async 
     res.json({ message: '2FA re-enabled successfully' });
   } catch (error) {
     console.error('Error re-enabling 2FA:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Cloudinary Management API Endpoints
+
+// Get all uploaded images (admin only)
+app.get('/api/admin/cloudinary/images', authenticateToken, checkAdmin, async (req, res) => {
+  try {
+    const { next_cursor, max_results = 50 } = req.query;
+
+    const options = {
+      max_results: parseInt(max_results),
+      ...(next_cursor && { next_cursor })
+    };
+
+    const result = await listImages(options);
+    res.json({
+      images: result.resources,
+      next_cursor: result.next_cursor,
+      total_count: result.total_count
+    });
+  } catch (error) {
+    console.error('Error listing Cloudinary images:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Delete specific image (admin only)
+app.delete('/api/admin/cloudinary/delete/:publicId', authenticateToken, checkAdmin, async (req, res) => {
+  try {
+    const { publicId } = req.params;
+
+    if (!publicId) {
+      return res.status(400).json({ message: 'Public ID is required' });
+    }
+
+    const result = await deleteImage(publicId);
+    res.json({
+      message: 'Image deleted successfully',
+      result
+    });
+  } catch (error) {
+    console.error('Error deleting Cloudinary image:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Bulk delete images (admin only)
+app.post('/api/admin/cloudinary/bulk-delete', authenticateToken, checkAdmin, async (req, res) => {
+  try {
+    const { publicIds } = req.body;
+
+    if (!Array.isArray(publicIds) || publicIds.length === 0) {
+      return res.status(400).json({ message: 'Public IDs array is required' });
+    }
+
+    const results = await deleteImages(publicIds);
+
+    const successful = results.filter(result => result.status === 'fulfilled').length;
+    const failed = results.filter(result => result.status === 'rejected').length;
+
+    res.json({
+      message: `Bulk delete completed: ${successful} successful, ${failed} failed`,
+      successful,
+      failed,
+      results
+    });
+  } catch (error) {
+    console.error('Error bulk deleting Cloudinary images:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// General upload endpoint (authenticated users)
+app.post('/api/cloudinary/upload', authenticateToken, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No image file provided' });
+    }
+
+    res.json({
+      message: 'Image uploaded successfully',
+      imageUrl: req.file.path,
+      publicId: req.file.filename
+    });
+  } catch (error) {
+    console.error('Error uploading to Cloudinary:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Get image info (admin only)
+app.get('/api/admin/cloudinary/info/:publicId', authenticateToken, checkAdmin, async (req, res) => {
+  try {
+    const { publicId } = req.params;
+
+    if (!publicId) {
+      return res.status(400).json({ message: 'Public ID is required' });
+    }
+
+    const info = await getImageInfo(publicId);
+    res.json(info);
+  } catch (error) {
+    console.error('Error getting Cloudinary image info:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Clean up orphaned images (admin only)
+app.post('/api/admin/cloudinary/cleanup', authenticateToken, checkAdmin, async (req, res) => {
+  try {
+    // Get all image URLs from database
+    const [blogs, projects, abouts, teams, events, memories] = await Promise.all([
+      Blog.find({}, 'image'),
+      Project.find({}, 'imageUrl'),
+      About.find({}, 'imageUrl'),
+      Team.find({}, 'image'),
+      Event.find({}, 'imageUrl'),
+      Memory.find({}, 'imageUrl')
+    ]);
+
+    const usedImageUrls = [
+      ...blogs.map(b => b.image).filter(Boolean),
+      ...projects.map(p => p.imageUrl).filter(Boolean),
+      ...abouts.map(a => a.imageUrl).filter(Boolean),
+      ...teams.map(t => t.image).filter(Boolean),
+      ...events.map(e => e.imageUrl).filter(Boolean),
+      ...memories.map(m => m.imageUrl).filter(Boolean)
+    ];
+
+    const result = await cleanupOrphanedImages(usedImageUrls);
+    res.json(result);
+  } catch (error) {
+    console.error('Error cleaning up orphaned images:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 });

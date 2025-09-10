@@ -20,7 +20,13 @@
     "pm2:logs": "pm2 logs",
     "pm2:monit": "pm2 monit"
   },
-  "keywords": ["crm", "express", "mongodb", "nodejs", "api"],
+  "keywords": [
+    "crm",
+    "express",
+    "mongodb",
+    "nodejs",
+    "api"
+  ],
   "author": "DivClub Team",
   "license": "ISC",
   "type": "module",
@@ -40,7 +46,9 @@
     "express": "^4.19.2",
     "express-rate-limit": "^7.1.5",
     "express-session": "^1.18.2",
+    "form-data": "^4.0.4",
     "helmet": "^7.1.0",
+    "joi": "^18.0.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.18.0",
     "morgan": "^1.10.0",
